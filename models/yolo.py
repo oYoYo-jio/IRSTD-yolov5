@@ -25,6 +25,7 @@ if str(ROOT) not in sys.path:
 if platform.system() != 'Windows':
     ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
+from models.BiFormer import BiLevelRoutingAttention, AttentionLePE, Attention
 from models.common import (C3, C3SPP, C3TR, SPP, SPPF, Bottleneck, BottleneckCSP, C3Ghost, C3x, Classify, Concat,
                            Contract, Conv, CrossConv, DetectMultiBackend, DWConv, DWConvTranspose2d, Expand, Focus,
                            GhostBottleneck, GhostConv, Proto, MobileNetV3)
@@ -352,6 +353,9 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
         elif m is MobileNetV3:
             c2 = args[0]
             args = args[1:]
+        elif m in {Attention, BiLevelRoutingAttention, AttentionLePE}:
+            c2 = ch[f]
+            args = [c2, *args]
         else:
             c2 = ch[f]
 
