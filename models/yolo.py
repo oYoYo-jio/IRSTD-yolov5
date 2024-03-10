@@ -25,10 +25,13 @@ if str(ROOT) not in sys.path:
 if platform.system() != 'Windows':
     ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
+# BiFormer
 from models.BiFormer import BiLevelRoutingAttention, AttentionLePE, Attention
+
 from models.common import (C3, C3SPP, C3TR, SPP, SPPF, Bottleneck, BottleneckCSP, C3Ghost, C3x, Classify, Concat,
                            Contract, Conv, CrossConv, DetectMultiBackend, DWConv, DWConvTranspose2d, Expand, Focus,
-                           GhostBottleneck, GhostConv, Proto, MobileNetV3)
+                           GhostBottleneck, GhostConv, Proto,
+                           MobileNetV3, MobileNetV3P2, Add, attention_model, Zoom_cat, ScalSeq, SCAM)
 from models.experimental import MixConv2d
 from utils.autoanchor import check_anchor_order
 from utils.general import LOGGER, check_version, check_yaml, colorstr, make_divisible, print_args
@@ -350,12 +353,34 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
             c2 = ch[f] * args[0] ** 2
         elif m is Expand:
             c2 = ch[f] // args[0] ** 2
+        # MobileNet
         elif m is MobileNetV3:
             c2 = args[0]
             args = args[1:]
+        # MobileNet P2
+        elif m is MobileNetV3P2:
+            c2 = args[0]
+            args = args[1:]
+        # BiFormer
         elif m in {Attention, BiLevelRoutingAttention, AttentionLePE}:
             c2 = ch[f]
             args = [c2, *args]
+        # Zoom Cat
+        elif m is Zoom_cat:
+            c2 = sum(ch[x] for x in f)
+        elif m is Add:
+            c2 = ch[f[-1]]
+        elif m is attention_model:
+            c2 = ch[f[-1]]
+            args = [c2]
+        elif m is ScalSeq:
+            c1 = [ch[x] for x in f]
+            c2 = make_divisible(args[0] * gw, 8)
+            args = [c1, c2]
+        # SCAM
+        elif m in {SCAM}:
+            c2 = ch[f]
+            args = [c2]
         else:
             c2 = ch[f]
 
